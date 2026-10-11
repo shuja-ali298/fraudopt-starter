@@ -49,3 +49,15 @@ def test_requirement_includes_use_dependabot_supported_filenames():
                 target = path.parent / line.split(maxsplit=1)[1]
                 assert target.is_file(), f'{path.name} includes a missing file'
                 assert target.suffix in {'.txt', '.in'}, 'Dependabot must fetch included files'
+
+
+def test_pages_workflow_run_only_trusts_successful_own_main_runs():
+    content=(ROOT/'.github/workflows/pages.yml').read_text()
+    assert 'workflow_run:' in content
+    assert "github.event.workflow_run.conclusion == 'success'" in content
+    assert "github.event.workflow_run.head_branch == 'main'" in content
+    assert 'github.event.workflow_run.head_repository.full_name == github.repository' in content
+    assert "github.event.workflow_run.event == 'schedule'" in content
+    assert "github.event.workflow_run.event == 'workflow_dispatch'" in content
+    assert 'actions: read' in content.split('\n  deploy:\n')[0]
+    assert 'ref: ${{ github.event.workflow_run.head_sha }}' not in content

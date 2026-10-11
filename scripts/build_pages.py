@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import hashlib
 from pathlib import Path
 import shutil
 import sys
@@ -17,6 +18,18 @@ def build(source, destination):
     predictions = validate_predictions(pd.read_csv(source / 'test_predictions.csv.gz'))
     complaints = validate_trends(pd.read_csv(source / 'complaint_daily_trends.csv'))
     report = json.loads((source / 'model_report.json').read_text())
+    metadata_path = source / 'artifact_provenance.json'
+    provenance = json.loads(metadata_path.read_text()) if metadata_path.exists() else {
+        'sources': {'model': {'mode': 'snapshot'}, 'complaints': {'mode': 'snapshot'}}}
+    for kind in ('model', 'complaints'):
+        metadata = provenance['sources'][kind]
+        if metadata['mode'] not in {'workflow_artifact', 'snapshot'}:
+            raise ValueError('Unknown dashboard source mode')
+        for name, digest in metadata.get('file_sha256', {}).items():
+            if name not in {'model_report.json', 'test_predictions.csv.gz', 'complaint_daily_trends.csv'}:
+                raise ValueError('Unexpected source file in provenance')
+            if hashlib.sha256((source / name).read_bytes()).hexdigest() != digest:
+                raise ValueError('Staged dashboard file does not match its recorded hash')
     destination.mkdir(parents=True, exist_ok=True)
     for name in ['index.html', 'style.css', 'app.js', 'policy.js']:
         shutil.copyfile(ROOT / 'web' / name, destination / name)
@@ -27,7 +40,8 @@ def build(source, destination):
                                'matches': int(row.potential_fraud_issue_count)}
                               for row in complaints.itertuples()],
                'built_at_utc': datetime.now(timezone.utc).isoformat(),
-               'source': 'Committed demonstration snapshot; scheduled pipeline artifacts are separate.'}
+               'source': 'Automatically selected workflow artifacts with labelled snapshot fallback.',
+               'provenance': provenance}
     (destination / 'data.json').write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False))
     write_diagnostics(predictions.true_label, predictions.fraud_risk, destination)
     (destination / '.nojekyll').touch()

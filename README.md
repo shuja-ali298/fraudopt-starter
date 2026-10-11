@@ -183,8 +183,9 @@ git push
 
 Local pipeline outputs and remote GitHub Actions artifacts are separate: download
 remote artifacts before copying them if the hosted snapshot should use those runs.
-An automatically refreshed deployment requires a connection to artifact or object
-storage; that integration is not part of this first demonstration deployment.
+This Streamlit demonstration remains a fixed snapshot. The GitHub Pages version
+below fetches successful workflow artifacts automatically; the two hosts have
+separate data-refresh behavior.
 
 ## GitHub Pages dashboard
 
@@ -205,9 +206,41 @@ To publish:
 
 For this repository the expected project URL is
 `https://shuja-ali298.github.io/fraudopt-starter/`.
-The Pages site uses the committed `dashboard_data/` snapshot, not live workflow
-artifacts. Refresh the three snapshot files and commit them to publish new data.
-All assets use relative URLs, so repository-subdirectory hosting works.
+The Pages workflow automatically runs after successful **Daily complaint refresh**
+and **Weekly reproducible model build** runs on `main`. It selects the latest
+successful usable artifact from each workflow, builds the dashboard, and deploys
+it without modifying the repository or bypassing branch protection. No Azure
+setup, extra personal access token, or new secret is required: its download step
+uses GitHub's automatic token with read-only Actions access.
+
+Model reports and predictions are selected together from one model artifact;
+complaint trends come independently from the daily artifact. Only same-repository,
+completed successful `main` runs triggered by a schedule or manual dispatch are
+eligible. Archives are read as data, not executed or extracted wholesale; model
+joblib/database files are excluded. Downloaded inputs stay in `_dashboard_inputs/`,
+which is ignored and never committed. Deployment permissions remain confined to
+the separate deployment job.
+
+If no usable artifact exists within retention, that source uses the committed
+`dashboard_data/` snapshot with an explicit fallback notice. A malformed archive,
+failed API/download, invalid data, or failed comparison check stops deployment,
+leaving the published site unchanged. Source run IDs, commit SHAs, artifact times
+and file hashes are published in provenance; the dashboard distinguishes source
+timestamps from site build time and complaint received dates. The two source
+workflows still have separate refresh frequencies, and weekly modelling reuses
+historical data. All assets use relative URLs for repository-subdirectory hosting.
+
+After merging these changes to `main`, manually run **Deploy dashboard to GitHub
+Pages** once. Then run **Daily complaint refresh** and verify that it automatically
+starts a Pages deployment. The workflow-run trigger only becomes active once its
+workflow file is on the default branch. Subsequent daily and weekly successes
+publish refreshed results automatically. Failed upstream runs do not publish.
+
+For a local snapshot preview, use the build command below. To reproduce automatic
+artifact assembly outside Actions, set a short-lived token with **Actions: read**
+in `GITHUB_TOKEN` and use `python scripts/fetch_dashboard_artifacts.py --repository
+OWNER/REPO`, then `python scripts/build_pages.py --source _dashboard_inputs`.
+Never put tokens in command-line arguments or committed files.
 
 Local build and preview:
 

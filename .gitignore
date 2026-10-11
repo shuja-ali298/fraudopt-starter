@@ -5,6 +5,7 @@ __pycache__/
 .venv311/
 venv/
 /_site/
+/_dashboard_inputs/
 .env
 .env.*
 !.env.example
