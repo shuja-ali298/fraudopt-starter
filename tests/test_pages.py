@@ -19,4 +19,12 @@ def test_pages_build_uses_only_dashboard_fields(tmp_path):
     assert payload['complaints']==[{'date':'2026-10-01','count':5,'matches':2}]
     assert (destination/'index.html').exists() and (destination/'model_diagnostics.svg').exists()
     assert all((destination/name).exists() for name in ['precision_recall.svg', 'calibration.svg', 'icon.svg'])
+    import re
+    html = (destination/'index.html').read_text()
+    for original in ('style.css', 'app.js', 'policy.js'):
+        assert f'./{original}"' not in html
+        stem, suffix = original.rsplit('.', 1)
+        versioned = re.search(rf'\./({stem}\.[0-9a-f]{{16}}\.{suffix})', html)
+        assert versioned and (destination/versioned.group(1)).read_bytes() == (destination/original).read_bytes()
+    assert 'nav-short' not in html and 'nav-full' not in html
     assert not list(destination.glob('*.joblib')) and not list(destination.glob('*.sqlite'))
