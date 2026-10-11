@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 .venv311/
+venv/
 .env
 *.egg-info/
 .DS_Store

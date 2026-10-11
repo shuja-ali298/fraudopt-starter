@@ -134,3 +134,26 @@ pip-compile --extra test --extra cloud --strip-extras --no-emit-index-url --outp
 A successful complaint refresh reports its inclusive start, exclusive end, and `ingestion_complete`. The lookback includes today and exactly the requested number of calendar days. Header-only CSV exports represent valid empty windows; blank response bodies fail. Azure restores are staged and checked for SQLite integrity and required columns before replacing local data. OpenML refreshes validate the downloaded snapshot before replacing the raw cache.
 
 The project folder has a dedicated local Git repository; no remote is configured automatically. Generated environments, package metadata, datasets, model outputs and Finder metadata are ignored. Use Python 3.11 and the locked environment above rather than an unrelated system installation.
+
+## Local dashboard
+
+The Streamlit app reads existing reports in `outputs/`; it does not download data, retrain models, or load joblib files. Install the optional dashboard environment and launch from the project folder:
+
+```bash
+source .venv311/bin/activate
+python -m pip install -r requirements-dashboard.lock
+python -m pip install --no-deps -e .
+python -m streamlit run app.py
+```
+
+- **Model performance:** held-out AP, ROC AUC, Brier score, prevalence, PR/calibration charts, model selection evidence, chronology, provenance and report export.
+- **Review strategy:** configurable daily capacity, review/friction costs and effectiveness; comparison of risk-only and positive expected-value reviews; capacity utilisation, capacity frontier and downloadable decisions/scenario reports. All benefit values are simulated in dataset amount units. Exploring test outcomes must not be used to claim a newly tuned strategy has untouched evaluation.
+- **Complaint trends:** independent received-date counts, fraud/scam issue-category matches, date filtering and CSV export. Publication lag and reporting bias limit interpretation; missing dates remain gaps rather than assumed zeros.
+
+The **Local data** control accepts another output folder, including extracted GitHub workflow artifacts. Cache keys include file size and modification time; **Reload outputs** clears cached data. File timestamps indicate local modification only, not a verified successful ingestion. Missing model outputs do not prevent reading complaint trends.
+
+Dashboard dependencies have their own Python 3.11 lock, constrained by the pipeline lock. Update it deliberately with:
+
+```bash
+pip-compile --extra dashboard --extra test --extra cloud --constraint requirements.lock --strip-extras --no-emit-index-url --output-file requirements-dashboard.lock pyproject.toml
+```

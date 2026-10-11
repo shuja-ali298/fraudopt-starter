@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=7.4,<10"]
 cloud = ["azure-storage-blob>=12.19,<13"]
+dashboard = ["streamlit>=1.65,<2"]
 
 [project.scripts]
 fraudopt = "fraudopt.cli:main"
