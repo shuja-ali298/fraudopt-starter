@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
+from matplotlib.ticker import PercentFormatter
 from sklearn.metrics import precision_recall_curve
 
 
@@ -30,3 +31,27 @@ def write_diagnostics(labels, probabilities, output_dir: Path):
             ylabel='Observed fraud rate', xlim=(0,1), ylim=(0,1))
     cal.legend()
     figure.savefig(output_dir/'model_diagnostics.svg')
+    # Separate, legible charts for the responsive Pages dashboard.
+    pr_figure = Figure(figsize=(5.2, 3.6), layout='constrained')
+    pr_axis = pr_figure.subplots()
+    pr_axis.step(recall, precision, where='post', color='#006b61', linewidth=2)
+    pr_axis.axhline(labels.mean(), linestyle='--', color='#687787', label='Prevalence baseline')
+    pr_axis.set(xlabel='Recall', ylabel='Precision', xlim=(0, 1), ylim=(0, 1))
+    pr_axis.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+    pr_axis.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+    pr_axis.legend(frameon=False, fontsize=9)
+    pr_axis.grid(axis='y', alpha=.15)
+    pr_figure.savefig(output_dir/'precision_recall.svg')
+
+    cal_figure = Figure(figsize=(5.2, 3.6), layout='constrained')
+    cal_axis = cal_figure.subplots()
+    limit = min(1.0, max(.01, float(calibration[['mean_predicted_probability', 'observed_fraud_rate']].max().max()) * 1.15))
+    cal_axis.plot([0, limit], [0, limit], linestyle='--', color='#687787', label='Ideal calibration')
+    cal_axis.plot(calibration.mean_predicted_probability, calibration.observed_fraud_rate,
+                  marker='o', color='#006b61', label='Observed groups')
+    cal_axis.set(xlabel='Predicted fraud probability', ylabel='Observed fraud rate', xlim=(0, limit), ylim=(0, limit))
+    cal_axis.xaxis.set_major_formatter(PercentFormatter(1))
+    cal_axis.yaxis.set_major_formatter(PercentFormatter(1))
+    cal_axis.legend(frameon=False, fontsize=9)
+    cal_axis.grid(axis='y', alpha=.15)
+    cal_figure.savefig(output_dir/'calibration.svg')

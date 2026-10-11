@@ -81,8 +81,9 @@ def download_csv(label, frame, filename):
 
 
 def model_page(directory):
-    st.header('Model performance')
-    st.write('Time-separated evaluation of anonymised European card transactions from September 2013.')
+    st.header('Executive overview')
+    st.write('Compare fraud coverage, investigation workload and illustrative financial value.')
+    st.caption('Historical 2013 card-payment example; this is not a live fraud control.')
     report = load_file(directory, 'model_report.json', 'json', required=False)
     df = predictions(directory)
     if df is None:
@@ -91,88 +92,127 @@ def model_page(directory):
     if y.nunique() < 2:
         st.error('Both classes are required for model performance charts.')
         return
-    cols = st.columns(4)
-    cols[0].metric('Average precision', f'{average_precision_score(y,p):.3f}')
-    cols[1].metric('ROC AUC', f'{roc_auc_score(y,p):.3f}')
-    cols[2].metric('Brier score', f'{brier_score_loss(y,p):.6f}')
-    cols[3].metric('Fraud prevalence', f'{y.mean():.3%}')
-    st.caption(f'{len(df):,} held-out transactions · {int(y.sum()):,} fraud labels · '
-               f'{(df.elapsed_seconds.max()-df.elapsed_seconds.min())/3600:.2f} hours observed. '
-               'Average precision measures ranking; Brier score measures probability error (lower is better).')
-    if isinstance(report, dict):
-        st.write(f"**Selected model:** {report.get('chosen_model','Unrecorded').replace('_',' ').title()} · "
-                 f"**Selection criterion:** {report.get('selection_metric','Unrecorded')}")
-        candidates = report.get('candidates_selection_only', {})
-        if candidates:
-            with st.expander('Candidate comparison on the selection period'):
-                st.dataframe(pd.DataFrame(candidates).T, width='stretch')
-                st.caption('Candidate selection results are from an earlier period; only the chosen model is evaluated here on test data.')
-    left, right = st.columns(2)
-    precision, recall, _ = precision_recall_curve(y,p)
-    fig = Figure(figsize=(6,4), layout='constrained')
-    ax = fig.subplots()
-    ax.step(recall, precision, where='post', label='Selected model')
-    ax.axhline(y.mean(), color='gray', linestyle='--', label='Prevalence baseline')
-    ax.set(xlabel='Recall', ylabel='Precision', xlim=(0,1), ylim=(0,1), title='Precision-recall')
-    ax.legend()
-    left.pyplot(fig)
-    bins = []
-    for idx in np.array_split(np.argsort(p.to_numpy(), kind='stable'), min(10,len(df))):
-        bins.append({'Predicted probability': p.iloc[idx].mean(), 'Observed fraud rate': y.iloc[idx].mean(), 'Transactions': len(idx)})
-    cal = pd.DataFrame(bins)
-    fig = Figure(figsize=(6,4), layout='constrained')
-    ax = fig.subplots()
-    ax.plot([0,1],[0,1], '--', color='gray', label='Ideal calibration')
-    ax.plot(cal['Predicted probability'],cal['Observed fraud rate'], 'o-', label='Equal-population bins')
-    limit = min(1, max(.01, cal[['Predicted probability','Observed fraud rate']].max().max()*1.2))
-    ax.set(xlabel='Mean predicted probability', ylabel='Observed fraud rate', xlim=(0,limit), ylim=(0,limit), title='Calibration (zoomed)')
-    ax.legend()
-    right.pyplot(fig)
-    st.caption('Calibration uses 10 equal-population bins. Few positive labels make these estimates uncertain; confidence intervals are not yet available.')
-    with st.expander('Chronology and provenance'):
+    defaults = report.get('simulated_policy_assumptions', {}) if isinstance(report, dict) else {}
+    capacity = int(defaults.get('capacity_per_simulated_day', 50))
+    review = float(defaults.get('review_cost_amount_units', 10))
+    friction = float(defaults.get('false_review_friction_amount_units', 15))
+    effect = float(defaults.get('intervention_effectiveness', .7))
+    outcomes, decisions = compare_policies(df, capacity, review, friction, effect)
+    risk, impact = outcomes.loc['Risk only'], outcomes.loc['Expected value']
+    st.caption(f'{len(df):,} payments · {int(y.sum())} fraud cases · Daily investigation capacity: {capacity}')
+    st.subheader('What the results show')
+    st.write(f"Financial-impact reviews require {int(impact.reviews)} investigations and flag "
+             f"{int(impact.false_reviews)} genuine payments, compared with {int(risk.reviews)} "
+             f"investigations and {int(risk.false_reviews)} genuine payments for fraud-risk reviews. "
+             f"They identify {int(impact.fraud_found)} fraud cases, compared with {int(risk.fraud_found)}.")
+    net_risk = risk.simulated_net_benefit_amount_units
+    net_impact = impact.simulated_net_benefit_amount_units
+    if net_risk > 0 and net_impact != net_risk:
+        difference = (net_impact - net_risk) / net_risk
+        st.write(f"The illustrative net value is {abs(difference):.1%} {'higher' if difference > 0 else 'lower'} under the saved assumptions.")
+    else:
+        st.write(f'Illustrative net value: {net_impact:,.2f} for financial-impact reviews and {net_risk:,.2f} for fraud-risk reviews.')
+    fraud_amount = df.loc[y == 1, 'amount'].sum()
+    for column, key, name, flag in zip(st.columns(2), ['Risk only','Expected value'],
+                                     ['Prioritise fraud risk','Prioritise financial impact'],
+                                     ['review_risk','review_expected_value']):
+        outcome = outcomes.loc[key]
+        reviewed_amount = decisions.loc[(decisions.true_label == 1) & decisions[flag], 'amount'].sum()
+        with column:
+            st.subheader(name)
+            st.dataframe(pd.DataFrame({
+                'Business outcome': ['Fraud cases identified','Share of fraud amount reviewed','Investigations required','Genuine payments flagged','Illustrative net value'],
+                'Result': [f'{int(outcome.fraud_found)} of {int(y.sum())} ({outcome.fraud_recall:.0%})',
+                           f'{reviewed_amount/fraud_amount:.1%}' if fraud_amount else '—',
+                           str(int(outcome.reviews)),str(int(outcome.false_reviews)),
+                           f'{outcome.simulated_net_benefit_amount_units:,.2f}']
+            }), hide_index=True, width='stretch')
+    st.caption('Currency is unspecified. Financial value uses the sample amounts and hypothetical costs and loss reduction; it is not verified money saved.')
+    st.write('The choice is the balance between broader fraud coverage, investigation effort and unnecessary reviews of genuine payments. Adjust the example assumptions in Review options.')
+    with st.expander('Supporting model validation — for specialist review'):
+        cols = st.columns(4)
+        cols[0].metric('Average precision', f'{average_precision_score(y,p):.3f}')
+        cols[1].metric('ROC AUC', f'{roc_auc_score(y,p):.3f}')
+        cols[2].metric('Brier score', f'{brier_score_loss(y,p):.6f}')
+        cols[3].metric('Fraud prevalence', f'{y.mean():.3%}')
+        st.caption(f'{len(df):,} held-out transactions · {int(y.sum()):,} fraud labels · '
+                   f'{(df.elapsed_seconds.max()-df.elapsed_seconds.min())/3600:.2f} hours observed. '
+                   'Average precision measures ranking; Brier score measures probability error (lower is better).')
+        if isinstance(report, dict):
+            st.write(f"**Selected model:** {report.get('chosen_model','Unrecorded').replace('_',' ').title()} · "
+                     f"**Selection criterion:** {report.get('selection_metric','Unrecorded')}")
+            candidates = report.get('candidates_selection_only', {})
+            if candidates:
+                with st.expander('Candidate comparison on the selection period'):
+                    st.dataframe(pd.DataFrame(candidates).T, width='stretch')
+                    st.caption('Candidate selection results are from an earlier period; only the chosen model is evaluated here on test data.')
+        left, right = st.columns(2)
+        precision, recall, _ = precision_recall_curve(y,p)
+        fig = Figure(figsize=(6,4), layout='constrained')
+        ax = fig.subplots()
+        ax.step(recall, precision, where='post', label='Selected model')
+        ax.axhline(y.mean(), color='gray', linestyle='--', label='Prevalence baseline')
+        ax.set(xlabel='Recall', ylabel='Precision', xlim=(0,1), ylim=(0,1), title='Precision-recall')
+        ax.legend()
+        left.pyplot(fig)
+        bins = []
+        for idx in np.array_split(np.argsort(p.to_numpy(), kind='stable'), min(10,len(df))):
+            bins.append({'Predicted probability': p.iloc[idx].mean(), 'Observed fraud rate': y.iloc[idx].mean(), 'Transactions': len(idx)})
+        cal = pd.DataFrame(bins)
+        fig = Figure(figsize=(6,4), layout='constrained')
+        ax = fig.subplots()
+        ax.plot([0,1],[0,1], '--', color='gray', label='Ideal calibration')
+        ax.plot(cal['Predicted probability'],cal['Observed fraud rate'], 'o-', label='Equal-population bins')
+        limit = min(1, max(.01, cal[['Predicted probability','Observed fraud rate']].max().max()*1.2))
+        ax.set(xlabel='Mean predicted probability', ylabel='Observed fraud rate', xlim=(0,limit), ylim=(0,limit), title='Calibration (zoomed)')
+        ax.legend()
+        right.pyplot(fig)
+        st.caption('Calibration uses 10 equal-population bins. Few positive labels make these estimates uncertain; confidence intervals are not yet available.')
+        with st.expander('Chronology and provenance'):
+            if isinstance(report,dict):
+                counts = pd.DataFrame({'Transactions': report.get('period_rows',{}), 'Fraud labels': report.get('period_fraud',{})})
+                st.dataframe(counts, width='stretch')
+                st.json(report.get('reproducibility',{}))
+            manifest = load_file(directory.parent/'data', 'creditcard_manifest.json', 'json', required=False)
+            if manifest:
+                st.json(manifest)
+            st.write('Features are anonymous PCA components and log amount. Elapsed seconds preserve chronology; they are not calendar timestamps. Weekly builds reuse this fixed historical dataset.')
+        freshness(directory,'test_predictions.csv.gz')
         if isinstance(report,dict):
-            counts = pd.DataFrame({'Transactions': report.get('period_rows',{}), 'Fraud labels': report.get('period_fraud',{})})
-            st.dataframe(counts, width='stretch')
-            st.json(report.get('reproducibility',{}))
-        manifest = load_file(directory.parent/'data', 'creditcard_manifest.json', 'json', required=False)
-        if manifest:
-            st.json(manifest)
-        st.write('Features are anonymous PCA components and log amount. Elapsed seconds preserve chronology; they are not calendar timestamps. Weekly builds reuse this fixed historical dataset.')
-    freshness(directory,'test_predictions.csv.gz')
-    if isinstance(report,dict):
-        st.download_button('Download model report', json.dumps(report,indent=2), 'model_report.json', 'application/json')
+            st.download_button('Download model report', json.dumps(report,indent=2), 'model_report.json', 'application/json')
 
 
 def strategy_page(directory):
-    st.header('Review strategy simulator')
-    st.info('Hypothetical batch simulation. All values use dataset amount units; the currency is unknown. These figures do not measure prevented losses.')
+    st.header('Review options')
+    st.caption('Compare investigation capacity and example costs. Currency is unspecified; the value figures are illustrations, not measured savings.')
     df = predictions(directory)
     if df is None:
         return
     report = load_file(directory,'model_report.json','json',required=False)
     defaults = report.get('simulated_policy_assumptions',{}) if isinstance(report,dict) else {}
     controls = st.columns(4)
-    capacity = controls[0].number_input('Reviews per simulated day', min_value=0, max_value=10000, value=int(defaults.get('capacity_per_simulated_day',50)), step=10)
-    review = controls[1].number_input('Review cost (amount units)', min_value=0.0, value=float(defaults.get('review_cost_amount_units',10)), step=1.0)
-    friction = controls[2].number_input('False-review friction (amount units)', min_value=0.0, value=float(defaults.get('false_review_friction_amount_units',15)), step=1.0)
-    effect = controls[3].slider('Intervention effectiveness', 0.0, 1.0, float(defaults.get('intervention_effectiveness',.7)), .05)
+    capacity = controls[0].number_input('Daily investigation capacity', min_value=0, max_value=10000, value=int(defaults.get('capacity_per_simulated_day',50)), step=10)
+    review = controls[1].number_input('Cost per investigation', min_value=0.0, value=float(defaults.get('review_cost_amount_units',10)), step=1.0)
+    friction = controls[2].number_input('Extra cost for a genuine payment', min_value=0.0, value=float(defaults.get('false_review_friction_amount_units',15)), step=1.0)
+    effect = controls[3].slider('Assumed loss reduction (%)', 0, 100, round(float(defaults.get('intervention_effectiveness',.7))*100), 5) / 100
     st.caption('Ranking sees the entire elapsed-day bucket. Each touched bucket gets full capacity, including partial days. Changing assumptions explores held-out outcomes; it does not select or retrain a model.')
     comparison, decisions = compare_policies(df,capacity,review,friction,effect)
-    display = comparison.rename(columns={'reviews':'Reviews','fraud_found':'Fraud found','false_reviews':'False reviews', 'fraud_recall':'Fraud recall','precision':'Precision','simulated_net_benefit_amount_units':'Simulated net benefit (amount units)', 'available_reviews':'Available reviews','capacity_utilisation':'Capacity utilisation'})
-    st.dataframe(display.style.format({'Fraud recall':'{:.1%}','Precision':'{:.1%}','Capacity utilisation':'{:.1%}','Simulated net benefit (amount units)':'{:,.2f}'}), width='stretch')
+    names = {'Risk only':'Prioritise fraud risk', 'Expected value':'Prioritise financial impact'}
+    display = comparison.rename(index=names, columns={'reviews':'Investigations','fraud_found':'Fraud cases found','false_reviews':'Genuine payments flagged', 'fraud_recall':'Share of fraud cases found','precision':'Fraud among reviewed payments','simulated_net_benefit_amount_units':'Illustrative net value', 'available_reviews':'Investigation capacity','capacity_utilisation':'Capacity used'})
+    st.dataframe(display.style.format({'Share of fraud cases found':'{:.1%}','Fraud among reviewed payments':'{:.1%}','Capacity used':'{:.1%}','Illustrative net value':'{:,.2f}'}), width='stretch')
     delta = comparison.loc['Expected value','simulated_net_benefit_amount_units'] - comparison.loc['Risk only','simulated_net_benefit_amount_units']
-    st.write(f'Expected-value ranking changes simulated net benefit by **{delta:+,.2f} amount units** compared with risk-only ranking under these assumptions. Inspect recall and false reviews alongside benefit.')
-    st.subheader('Capacity frontier')
+    st.write(f'Financial-impact reviews change illustrative net value by **{delta:+,.2f}** compared with fraud-risk reviews under these assumptions. Consider fraud cases found, genuine payments flagged and investigation workload alongside this figure.')
+    st.subheader('Fraud found at different investigation capacities')
     capacities = sorted(set([0,10,25,50,100,250,500,int(capacity)]))
     frontier = []
     for k in capacities:
         results,_ = compare_policies(df,k,review,friction,effect)
-        frontier.append({'Reviews per simulated day':k, **results.simulated_net_benefit_amount_units.to_dict()})
+        frontier.append({'Daily investigation capacity':k, **results.simulated_net_benefit_amount_units.to_dict()})
     frontier = pd.DataFrame(frontier)
-    st.line_chart(frontier.set_index('Reviews per simulated day'), x_label='Reviews per simulated day', y_label='Simulated net benefit (amount units)')
+    st.line_chart(frontier.set_index('Daily investigation capacity'), x_label='Daily investigation capacity', y_label='Simulated net benefit (amount units)')
     st.caption('Offline sensitivity on the same held-out sample. Choosing a capacity after viewing test outcomes would require a fresh evaluation period for an unbiased performance claim.')
     with st.expander('Inspect review decisions'):
-        strategy = st.selectbox('Show reviewed transactions for', ['Expected value','Risk only'])
+        strategy = st.selectbox('Show reviewed payments for', ['Expected value','Risk only'], format_func=names.get)
         flag = 'review_expected_value' if strategy=='Expected value' else 'review_risk'
         reviewed = decisions.loc[decisions[flag]].sort_values('expected_review_benefit' if strategy=='Expected value' else 'fraud_risk', ascending=False,kind='stable')
         st.dataframe(reviewed.head(500),width='stretch')
@@ -185,8 +225,8 @@ def strategy_page(directory):
 
 
 def complaint_page(directory):
-    st.header('Independent complaint trends')
-    st.info('US consumer complaints are separate from the historical European card model. Category matches are not confirmed fraud and are not fraud prevalence.')
+    st.header('Consumer complaints')
+    st.caption('These consumer reports provide external context. They are not confirmed fraud cases and are separate from the card-payment analysis.')
     raw = load_file(directory,'complaint_daily_trends.csv')
     if raw is None:
         st.code('fraudopt ingest-complaints --lookback-days 90',language='bash')
@@ -207,8 +247,8 @@ def complaint_page(directory):
     total, matched = int(view.complaint_count.sum()), int(view.potential_fraud_issue_count.sum())
     cols = st.columns(3)
     cols[0].metric('Published complaints', f'{total:,}')
-    cols[1].metric('Issue-category matches',f'{matched:,}')
-    cols[2].metric('Matching share of complaints',f'{matched/total:.1%}' if total else '—')
+    cols[1].metric('Reports about fraud-related concerns',f'{matched:,}')
+    cols[2].metric('Share of complaints flagged',f'{matched/total:.1%}' if total else '—')
     chart = view.set_index('date_received')[['complaint_count','potential_fraud_issue_count']].rename(columns={'complaint_count':'All complaints','potential_fraud_issue_count':'Fraud/scam issue matches'})
     # Preserve missing days as gaps; absence from an aggregate is not evidence of zero.
     chart = chart.reindex(pd.date_range(chosen[0],chosen[1],freq='D'))
@@ -224,8 +264,8 @@ def complaint_page(directory):
 
 
 st.sidebar.title('FraudOpt')
-st.sidebar.caption('Research → decisions → evidence')
-page = st.sidebar.radio('Explore', ['Model performance','Review strategy','Complaint trends'])
+st.sidebar.caption('Historical models and complaint trends')
+page = st.sidebar.radio('Explore', ['Model performance','Review strategy','Complaint trends'], format_func={'Model performance':'Executive overview','Review strategy':'Review options','Complaint trends':'Consumer complaints'}.get)
 with st.sidebar.expander('Local data'):
     default_location = ('Configured outputs' if 'Configured outputs' in OUTPUT_LOCATIONS else
                         'Pipeline outputs' if (ROOT/'outputs'/'test_predictions.csv.gz').exists() else
@@ -238,7 +278,7 @@ directory = OUTPUT_LOCATIONS[location]
 if directory.resolve() == (ROOT/'dashboard_data').resolve():
     st.info('Demonstration snapshot. These results do not refresh automatically from scheduled workflows.')
 st.title('FraudOpt')
-st.caption('Transparent fraud modelling and review allocation under explicit assumptions.')
+st.caption('Historical fraud model results and review strategy comparisons.')
 {'Model performance':model_page,'Review strategy':strategy_page,'Complaint trends':complaint_page}[page](directory)
 st.divider()
 st.caption('Research prototype. Historical 2013 transactions do not establish performance on modern fraud. Simulation assumptions and complaint category matches require careful interpretation.')

@@ -1,10 +1,98 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="FraudOpt: historical fraud model evaluation, capacity-aware review simulation and independent complaint trends."><title>FraudOpt · Decision analytics</title><link rel="stylesheet" href="./style.css"><script defer src="./policy.js"></script><script defer src="./app.js"></script></head>
-<body><a class="skip" href="#content">Skip to content</a>
-<header><div class="brand"><span class="mark">F</span><div><strong>FraudOpt</strong><small>Research → decisions → evidence</small></div></div><span class="badge">Portfolio research</span></header>
-<div class="layout"><aside><nav aria-label="Dashboard pages"><button data-page="model" aria-current="page">Model performance</button><button data-page="strategy">Review strategy</button><button data-page="complaints">Complaint trends</button></nav><p>Historical card model.<br>Independent public complaint feed.</p><p id="build-date"></p></aside>
-<main id="content"><div id="status" role="status">Loading dashboard data…</div><div id="source-notice" class="notice">Loading source provenance…</div><details><summary>Published data sources and refresh times</summary><div id="source-provenance"></div><button id="download-provenance" class="secondary">Download source provenance</button><p class="muted">Artifact timestamps identify the published files. Workflow timestamps identify successful run updates; site build time is separate. Weekly modelling still uses the fixed historical dataset.</p></details>
-<section id="model" hidden><div class="eyebrow">01 / MODEL EVIDENCE</div><h1>From rare events<br>to measurable performance.</h1><p class="intro">Time-separated evaluation of anonymised European card transactions from September 2013.</p><div id="model-metrics" class="metrics"></div><p id="model-summary"></p><div class="card"><h2>Discrimination & calibration</h2><img src="./model_diagnostics.svg" alt="Held-out precision-recall curve and equal-population calibration chart" width="1100"><p class="muted">Average precision measures ranking; Brier score measures probability error (lower is better). Calibration bins contain equal numbers of transactions. Few positive labels make estimates uncertain; confidence intervals are not available.</p></div><div class="card"><h2>Candidate selection evidence</h2><div id="candidates"></div><p class="muted">These metrics are from the earlier selection period, not the final test period.</p></div><details><summary>Chronology and provenance</summary><div id="periods"></div><pre id="provenance"></pre><p>Elapsed seconds are not calendar timestamps. Anonymous PCA features and log amount are used for modelling. Weekly rebuilds reuse the fixed 2013 dataset.</p></details><button id="download-model" class="secondary">Download model report</button></section>
-<section id="strategy" hidden><div class="eyebrow">02 / DECISION EXPLORATION</div><h1>Make every<br>review count.</h1><p class="intro">Compare risk-only ranking with positive expected-value reviews under a finite investigation budget.</p><div class="notice">Hypothetical batch simulation. Values use dataset amount units; the currency is unknown. These figures do not measure prevented losses.</div><form id="controls" class="card controls"><label>Reviews per simulated day<input id="capacity" type="number" min="0" max="10000" step="1" value="50" required></label><label>Review cost (amount units)<input id="cost" type="number" min="0" step="any" value="10" required></label><label>False-review friction (amount units)<input id="friction" type="number" min="0" step="any" value="15" required></label><label>Intervention effectiveness<input id="effect" type="number" min="0" max="1" step="any" value="0.7" required></label><button type="submit">Compare strategies</button></form><p class="muted">Ranking sees the whole elapsed-day bucket. Every touched bucket receives full capacity, including partial days. Labels evaluate decisions; they never rank them.</p><div id="strategy-error" role="alert"></div><div class="card"><h2>Policy comparison</h2><div id="policy-table"></div><p id="policy-insight"></p></div><div class="card"><h2>Capacity frontier</h2><div id="frontier"></div><p class="muted">Exploratory outcomes on the same held-out sample. Tuning capacity after seeing these results would require fresh evaluation data for an unbiased claim.</p></div><details><summary>Inspect reviewed transactions</summary><label>Strategy<select id="review-strategy"><option value="expected_value">Expected value</option><option value="risk">Risk only</option></select></label><div id="decisions"></div><p class="muted">Preview limited to 100 rows. These observations have no real customer or transaction identifiers.</p></details><p class="formula">Expected benefit = p × amount × effectiveness − review cost − (1 − p) × friction</p><div class="actions"><button id="download-scenario" class="secondary">Download scenario report</button><button id="download-decisions" class="secondary">Download all decisions (CSV)</button><button id="download-frontier" class="secondary">Download capacity frontier</button></div></section>
-<section id="complaints" hidden><div class="eyebrow">03 / INDEPENDENT PUBLIC TRENDS</div><h1>Listen to the<br>complaint signals.</h1><p class="intro">Published US money-transfer complaints, grouped by received date.</p><div class="notice">These complaints are separate from the European card model. Category matches are not confirmed fraud and are not fraud prevalence.</div><div class="card date-controls"><label>From<input type="date" id="from"></label><label>To<input type="date" id="to"></label></div><div id="complaint-metrics" class="metrics"></div><div class="card"><h2>Complaints over time</h2><div id="complaint-chart"></div><p class="muted">Recent days may be incomplete due to publication delays. Counts can be revised. Missing dates appear as gaps, not assumed zeros.</p></div><details><summary>Source and interpretation</summary><p>CFPB Consumer Complaint Database, filtered to “Money transfer, virtual currency, or money service”. Issue/sub-issue categories match fraud, scam, scammed, unauthorised/unauthorized or identity theft. No narratives are used. Complaints are self-selected and cannot establish population fraud rates or explain card-model performance.</p></details><p id="complaint-summary"></p><button id="download-complaints" class="secondary">Download selected complaint trends</button></section>
-<footer>Research prototype · Historical 2013 transactions do not establish performance on modern fraud.</footer></main></div></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Historical fraud model results, review strategy comparisons and public complaint trends.">
+  <title>FraudOpt · Executive overview</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="./policy.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="app-header">
+    <div class="brand"><span class="mark" aria-hidden="true">F</span><div><strong>FraudOpt</strong><small>Fraud review decisions</small></div></div>
+    <span class="badge">Research demo</span>
+  </header>
+  <div class="layout">
+    <aside>
+      <nav aria-label="Dashboard pages">
+        <button type="button" data-page="model" aria-current="page" aria-label="Executive overview"><span class="nav-full">Executive overview</span><span class="nav-short" aria-hidden="true">Overview</span></button>
+        <button type="button" data-page="strategy" aria-label="Review options"><span class="nav-full">Review options</span><span class="nav-short" aria-hidden="true">Reviews</span></button>
+        <button type="button" data-page="complaints" aria-label="Consumer complaints"><span class="nav-full">Consumer complaints</span><span class="nav-short" aria-hidden="true">Complaints</span></button>
+      </nav>
+      <div class="sidebar-meta"><p>2013 card transactions<br>US public complaints</p><p id="build-date"></p></div>
+    </aside>
+    <main id="content" aria-busy="true">
+      <div id="status" role="status">Loading results…</div>
+      <button id="retry-load" class="secondary" type="button" hidden>Try again</button>
+      <div class="data-status"><p id="source-notice">Loading data sources…</p><button id="view-sources" class="text-button" type="button">Data sources</button></div>
+
+      <section id="model" hidden aria-labelledby="model-title">
+        <div class="page-heading"><div><h1 id="model-title" tabindex="-1">Executive overview</h1><p class="intro">Compare fraud coverage, investigation workload and illustrative financial value.</p></div><button id="download-brief" class="secondary" type="button">Download summary</button></div>
+        <p class="context-note">Historical demonstration using 2013 card payments. This is an example of review allocation, not a live fraud control.</p>
+        <p id="overview-scope" class="result-context"></p>
+        <div class="card decision-summary"><h2>What the results show</h2><div id="executive-takeaway"></div><button id="explore-options" type="button">Compare review options</button></div>
+        <div id="overview-cards" class="policy-cards"></div>
+        <p class="context-note">The dataset does not specify a currency. Financial value uses its payment amounts and the assumed review costs and loss reduction; it is not verified money saved.</p>
+        <div class="card"><h2>The decision to make</h2><p>Set the balance between finding more fraud cases, avoiding unnecessary customer reviews, and focusing investigations on larger potential losses.</p><p class="muted">These results use the last applied business assumptions. Change them in Review options to see how the balance shifts. Actual operating costs and intervention results would need to be measured before a business rollout.</p></div>
+        <details id="technical-validation"><summary>Supporting model validation — for specialist review</summary>
+          <p class="muted">The model estimates fraud likelihood. It was chosen using an earlier validation period and evaluated on a later, separate test period.</p>
+          <div id="model-metrics" class="metrics"></div><p id="model-summary" class="result-context"></p>
+          <div class="chart-grid">
+            <div class="card"><h2>Precision and recall</h2><p class="muted">Precision measures fraud among flagged payments. Recall measures the share of fraud found.</p><img src="./precision_recall.svg" alt="Precision-recall curve for the held-out test period" width="520" height="360"><p id="pr-baseline-note" class="chart-note"></p></div>
+            <div class="card"><h2>Probability calibration</h2><p class="muted">Predicted probabilities compared with observed fraud rates.</p><img src="./calibration.svg" alt="Calibration chart with ideal calibration reference" width="520" height="360"><p class="chart-note">Ten equally sized groups. Confidence intervals are not available.</p></div>
+          </div>
+          <div class="card"><h2>Model comparison</h2><div id="candidates"></div><p class="chart-note">These results use the earlier validation period. Headline technical metrics use the later test period.</p></div>
+          <h2>Data split and model details</h2><div id="periods"></div><pre id="provenance"></pre>
+          <p class="muted">Elapsed time is not a calendar timestamp. Model inputs are anonymous PCA components and log amount. The dataset spans about two days and does not establish current production performance.</p>
+          <button id="download-model" class="secondary" type="button">Download technical report</button>
+        </details>
+      </section>
+
+      <section id="strategy" hidden aria-labelledby="strategy-title">
+        <div class="page-heading"><div><h1 id="strategy-title" tabindex="-1">Review options</h1><p class="intro">Adjust investigation capacity and example costs, then compare the business outcomes.</p></div></div>
+        <p class="context-note">These are example assumptions. Currency is unspecified; the value figures are illustrations, not measured savings.</p>
+        <form id="controls" class="card">
+          <fieldset><legend>Business assumptions</legend><div class="control-grid">
+            <label>Daily investigation capacity<input id="capacity" type="number" min="0" max="10000" step="1" value="50" required><span class="field-help">Maximum payments the team could investigate.</span></label>
+            <label>Cost per investigation<input id="cost" type="number" min="0" step="any" value="10" required><span class="field-help">Use the same numerical units as the example payments.</span></label>
+            <label>Extra cost for a genuine payment<input id="friction" type="number" min="0" step="any" value="15" required><span class="field-help">Example cost of inconveniencing a customer.</span></label>
+            <label>Assumed loss reduction (%)<input id="effect" type="number" min="0" max="100" step="any" value="70" required><span class="field-help">Share of a reviewed fraudulent payment assumed to be protected.</span></label>
+          </div></fieldset>
+          <div class="form-actions"><button type="submit">Update results</button><button id="reset-scenario" class="text-button" type="button">Reset assumptions</button><p id="scenario-state" role="status" aria-live="polite"></p></div>
+        </form>
+        <p class="chart-note">The example reviews a full day’s payments together. Partial days receive the full daily capacity.</p>
+        <div id="strategy-error" class="error" role="alert"></div>
+        <h2 class="section-title">How financial-impact reviews change the outcome</h2>
+        <div id="policy-metrics" class="metrics metrics-three"></div>
+        <div id="policy-cards" class="policy-cards"></div>
+        <p id="policy-insight" class="result-context" aria-live="polite"></p>
+        <details><summary>Full strategy comparison</summary><div id="policy-table"></div></details>
+        <div class="card"><h2>Fraud found at different investigation capacities</h2><div id="frontier" class="chart-host"></div><p class="chart-note">Both options use the same historical payments. The financial-impact option can leave capacity unused when another review is estimated to cost more than it could protect.</p></div>
+        <details><summary>Reviewed transactions</summary><label class="compact-label">Show strategy<select id="review-strategy"><option value="expected_value">Prioritise financial impact</option><option value="risk">Prioritise fraud risk</option></select></label><div id="decisions"></div><p class="chart-note">First 100 reviews shown. Labels evaluate the selection; they do not influence ranking. No customer identifiers are available.</p></details>
+        <details><summary>How financial value is calculated</summary><p>The fraud-risk option reviews the payments most likely to be fraudulent. The financial-impact option also considers payment size, review costs and assumed loss reduction, and only selects reviews with positive estimated value.</p><p class="formula">Expected benefit = probability × amount × effectiveness − review cost − (1 − probability) × false-review cost</p><p class="muted">Reported benefit uses the known test labels and assumed effectiveness and costs. It is not measured prevented loss.</p></details>
+        <div class="actions"><button id="download-scenario" class="secondary" type="button">Download assumptions and results</button><button id="download-decisions" class="secondary" type="button">Download all decisions</button><button id="download-frontier" class="secondary" type="button">Download capacity comparison</button></div>
+      </section>
+
+      <section id="complaints" hidden aria-labelledby="complaints-title">
+        <div class="page-heading"><div><h1 id="complaints-title" tabindex="-1">Consumer complaints</h1><p class="intro">Track published US money-transfer complaints, including categories mentioning fraud or scams.</p></div></div>
+        <p class="context-note">These are consumer reports, not confirmed fraud cases. They provide external context and are separate from the card-payment analysis.</p>
+        <div class="card date-controls"><div class="date-fields"><label>From<input type="date" id="from" required></label><label>To<input type="date" id="to" required></label></div><div class="date-presets" aria-label="Date range presets"><button type="button" class="secondary" data-days="7">Last 7 days</button><button type="button" class="secondary" data-days="30">Last 30 days</button><button type="button" class="secondary" data-days="all" aria-pressed="true">All dates</button></div><p class="field-help">Date shortcuts end at the latest complaint date available.</p></div>
+        <div id="complaint-takeaway" class="card decision-summary" hidden></div>
+        <p id="date-error" class="error" role="alert"></p>
+        <div id="complaint-results"><div id="complaint-metrics" class="metrics metrics-three"></div><p id="complaint-summary" class="result-context"></p><div class="card"><h2>Complaint volume over time</h2><div id="complaint-chart" class="chart-host"></div><p class="chart-note">A recent drop may reflect publication delays. These counts do not measure how common fraud is across all customers.</p></div><details><summary>Daily counts</summary><div id="complaint-table"></div></details></div>
+        <details><summary>About this source</summary><p>CFPB Consumer Complaint Database, filtered to “Money transfer, virtual currency, or money service”. Issue and sub-issue categories match fraud, scam, scammed, unauthorised/unauthorized or identity theft. No narratives are used.</p><p>Complaints are self-selected, can be revised, and do not measure population fraud rates or explain card-model performance.</p></details>
+        <button id="download-complaints" class="secondary" type="button">Download selected dates</button>
+      </section>
+
+      <details id="data-sources"><summary>Data and update history</summary><div id="source-provenance"></div><p class="muted">Update dates describe when these results were published. The card-payment example remains historical, even when the analysis is rebuilt.</p><button id="download-provenance" class="secondary" type="button">Download source details</button></details>
+      <footer>FraudOpt · Historical test results · Illustrative business comparison.</footer>
+    </main>
+  </div>
+</body>
+</html>

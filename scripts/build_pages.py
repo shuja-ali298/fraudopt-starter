@@ -31,7 +31,7 @@ def build(source, destination):
             if hashlib.sha256((source / name).read_bytes()).hexdigest() != digest:
                 raise ValueError('Staged dashboard file does not match its recorded hash')
     destination.mkdir(parents=True, exist_ok=True)
-    for name in ['index.html', 'style.css', 'app.js', 'policy.js']:
+    for name in ['index.html', 'style.css', 'app.js', 'policy.js', 'icon.svg']:
         shutil.copyfile(ROOT / 'web' / name, destination / name)
     payload = {'report': report, 'prediction_columns': predictions.columns.tolist(),
                'predictions': predictions.values.tolist(),
