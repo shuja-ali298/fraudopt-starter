@@ -40,3 +40,12 @@ def test_azure_secret_is_only_available_to_cloud_steps():
     secret_steps=[step for step in steps if 'secrets.AZURE_STORAGE_CONNECTION_STRING' in step]
     assert len(secret_steps)==2
     assert all(step.startswith('run: fraudopt cloud ') for step in secret_steps)
+
+
+def test_requirement_includes_use_dependabot_supported_filenames():
+    for path in ROOT.glob('requirements*.txt'):
+        for line in path.read_text().splitlines():
+            if line.startswith(('-r ', '-c ')):
+                target = path.parent / line.split(maxsplit=1)[1]
+                assert target.is_file(), f'{path.name} includes a missing file'
+                assert target.suffix in {'.txt', '.in'}, 'Dependabot must fetch included files'

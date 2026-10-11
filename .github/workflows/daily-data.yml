@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: requirements.lock
-      - run: python -m pip install -r requirements.lock
+          cache-dependency-path: requirements-pipeline.txt
+      - run: python -m pip install -r requirements-pipeline.txt
       - run: python -m pip install --no-deps -e .
       - run: fraudopt cloud pull
         env:

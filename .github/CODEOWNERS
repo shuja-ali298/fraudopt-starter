@@ -1,6 +1,6 @@
 # Requires matching branch/ruleset review settings to enforce approvals.
 /.github/ @shuja-ali298
-/requirements*.lock @shuja-ali298
-/requirements.txt @shuja-ali298
+/requirements*.txt @shuja-ali298
+/.python-version @shuja-ali298
 /pyproject.toml @shuja-ali298
 /scripts/ @shuja-ali298

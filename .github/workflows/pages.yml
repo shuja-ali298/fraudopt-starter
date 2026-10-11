@@ -10,7 +10,7 @@ on:
       - 'fraudopt/dashboard.py'
       - 'fraudopt/diagnostics.py'
       - 'fraudopt/policy.py'
-      - 'requirements.lock'
+      - 'requirements-pipeline.txt'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -30,8 +30,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-          cache-dependency-path: requirements.lock
-      - run: python -m pip install -r requirements.lock
+          cache-dependency-path: requirements-pipeline.txt
+      - run: python -m pip install -r requirements-pipeline.txt
       - run: python scripts/build_pages.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:

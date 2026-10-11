@@ -46,7 +46,7 @@ git clone <your-fraudopt-repository-url>
 cd fraudopt-starter
 python3.11 -m venv .venv311
 source .venv311/bin/activate        # Windows: .venv311\\Scripts\\activate
-python -m pip install -r requirements.lock
+python -m pip install -r requirements-pipeline.txt
 python -m pip install --no-deps -e .
 python -m pytest -q
 
@@ -124,11 +124,15 @@ This repository downloads public research data but does not redistribute the ori
 
 ## Development and reproducibility
 
-`requirements.lock` pins runtime, test and optional cloud dependencies for Python 3.11. Pull-request and push CI run the tests with this lock; scheduled jobs use the same environment. Model reports record the Python version, key dependency versions and SHA-256 of the exact cleaned input. Regenerate the lock deliberately under Python 3.11 after reviewing dependency updates:
+`requirements-pipeline.txt` pins runtime, test and optional cloud dependencies for Python 3.11. Pull-request and push CI run the tests with this lock; scheduled jobs use the same environment. Model reports record the Python version, key dependency versions and SHA-256 of the exact cleaned input. Regenerate the lock deliberately under Python 3.11 after reviewing dependency updates:
+
+Generated requirement files use `.txt` names so Dependabot includes them in its
+temporary update workspace. `.python-version` and the project's minimum Python
+version align dependency updates with the tested Python 3.11 environment.
 
 ```bash
 python -m pip install pip-tools
-pip-compile --extra test --extra cloud --strip-extras --no-emit-index-url --output-file requirements.lock pyproject.toml
+pip-compile --extra test --extra cloud --strip-extras --no-emit-index-url --output-file requirements-pipeline.txt pyproject.toml
 ```
 
 A successful complaint refresh reports its inclusive start, exclusive end, and `ingestion_complete`. The lookback includes today and exactly the requested number of calendar days. Header-only CSV exports represent valid empty windows; blank response bodies fail. Azure restores are staged and checked for SQLite integrity and required columns before replacing local data. OpenML refreshes validate the downloaded snapshot before replacing the raw cache.
@@ -141,7 +145,7 @@ The Streamlit app reads existing reports in `outputs/`; it does not download dat
 
 ```bash
 source .venv311/bin/activate
-python -m pip install -r requirements-dashboard.lock
+python -m pip install -r requirements-dashboard.txt
 python -m pip install --no-deps -e .
 python -m streamlit run app.py
 ```
@@ -155,7 +159,7 @@ The **Local data** selector is restricted to pipeline outputs, the demonstration
 Dashboard dependencies have their own Python 3.11 lock, constrained by the pipeline lock. Update it deliberately with:
 
 ```bash
-pip-compile --extra dashboard --extra test --extra cloud --constraint requirements.lock --strip-extras --no-emit-index-url --output-file requirements-dashboard.lock pyproject.toml
+pip-compile --extra dashboard --extra test --extra cloud --constraint requirements-pipeline.txt --strip-extras --no-emit-index-url --output-file requirements-dashboard.txt pyproject.toml
 ```
 
 ## First hosted demonstration
