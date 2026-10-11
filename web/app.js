@@ -22,6 +22,13 @@ function chart(target,series,xLabel,yLabel){
   svg+='<text x="70" y="322" font-size="11">'+formatX(xmin)+'</text><text x="780" y="322" text-anchor="end" font-size="11">'+formatX(xmax)+'</text><text x="425" y="347" text-anchor="middle" font-size="12">'+escapeText(xLabel)+'</text><text x="70" y="24" font-size="12">'+escapeText(yLabel)+'</text></svg><div class="legend">'+series.map((s,i)=>'<span class="series-'+i+'">● '+escapeText(s.name)+'</span>').join('')+'</div>';
   $(target).innerHTML=svg;
 }
+function provenance(){
+  const sources=data.provenance?.sources||{model:{mode:'snapshot'},complaints:{mode:'snapshot'}};
+  const automatic=Object.values(sources).filter(s=>s.mode==='workflow_artifact').length;
+  $('source-notice').textContent=automatic===2?'Automatically refreshed from successful main-branch model and complaint workflows.':automatic===1?'Partially refreshed: one source uses a workflow artifact; the other uses a labelled demonstration fallback.':'Demonstration fallback: usable successful workflow artifacts were unavailable. This data is a fixed snapshot.';
+  const records=Object.entries(sources).map(([kind,s])=>[kind==='model'?'Historical card model':'Independent complaints',s.mode==='workflow_artifact'?'Successful workflow artifact':'Demonstration snapshot',s.run_id||'—',s.run_updated_at_utc||'Not recorded',s.artifact_created_at_utc||'Not recorded']);
+  $('source-provenance').innerHTML=table(['Source','Origin','Run ID','Successful run updated (UTC)','Artifact created (UTC)'],records);
+}
 function model(){const r=data.report,m=r.untouched_test_metrics;
   metrics('model-metrics',[['Average precision',m.average_precision.toFixed(3)],['ROC AUC',m.roc_auc.toFixed(3)],['Brier score',m.brier_score.toFixed(6)],['Fraud prevalence',(m.fraud_prevalence*100).toFixed(3)+'%']]);
   $('model-summary').textContent=`Selected model: ${r.chosen_model.replaceAll('_',' ')}. Selection criterion: ${r.selection_metric}. ${number(data.predictions.length)} held-out transactions.`;
@@ -59,18 +66,19 @@ function complaints(){const start=$('from').value,end=$('to').value;
   const byDate=new Map(complaintView.map(r=>[r.date,r])),all=[];
   for(let t=Date.parse(start);t<=Date.parse(end);t+=86400000){const r=byDate.get(new Date(t).toISOString().slice(0,10));all.push([t,r]);}
   chart('complaint-chart',[{name:'All complaints',color:'#142b3f',values:all.map(([t,r])=>[t,r?r.count:null])},{name:'Fraud/scam issue matches',color:'#007b73',values:all.map(([t,r])=>[t,r?r.matches:null])}],'Received date','Published complaint count');
-  $('complaint-summary').textContent=`Latest received date in this snapshot: ${data.complaints.at(-1).date}. Received date is not a last-success timestamp.`;
+  $('complaint-summary').textContent=`Latest received date in published data: ${data.complaints.at(-1).date}. Received date is not a last-success timestamp.`;
 }
 function show(page){document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!==page);document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});history.replaceState(null,'','#'+page);}
 async function init(){try{
   const response=await fetch('./data.json',{cache:'no-cache'});if(!response.ok)throw new Error('Dashboard data could not be loaded.');data=await response.json();
-  model();strategy();
-  if(data.complaints.length){const first=data.complaints[0].date,last=data.complaints.at(-1).date;['from','to'].forEach(id=>{$(id).min=first;$(id).max=last;});$('from').value=first;$('to').value=last;complaints();}else{$('complaint-summary').textContent='No complaint observations in this snapshot.';$('from').disabled=true;$('to').disabled=true;}
+  provenance();model();strategy();
+  if(data.complaints.length){const first=data.complaints[0].date,last=data.complaints.at(-1).date;['from','to'].forEach(id=>{$(id).min=first;$(id).max=last;});$('from').value=first;$('to').value=last;complaints();}else{$('complaint-summary').textContent='No complaint observations in the published data.';$('from').disabled=true;$('to').disabled=true;}
   $('build-date').textContent='Site built '+new Date(data.built_at_utc).toLocaleString()+'. Build time is not source freshness.';
   $('status').textContent='';show(['model','strategy','complaints'].includes(location.hash.slice(1))?location.hash.slice(1):'model');
   document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));
   $('controls').addEventListener('submit',e=>{e.preventDefault();strategy();});$('review-strategy').addEventListener('change',decisions);
   ['from','to'].forEach(id=>$(id).addEventListener('change',complaints));
+  $('download-provenance').onclick=()=>download('source_provenance.json',JSON.stringify(data.provenance||{sources:{model:{mode:'snapshot'},complaints:{mode:'snapshot'}}},null,2),'application/json');
   $('download-model').onclick=()=>download('model_report.json',JSON.stringify(data.report,null,2),'application/json');
   $('download-scenario').onclick=()=>download('scenario_report.json',JSON.stringify({assumptions:scenario,input_sha256:data.report.reproducibility?.sha256_clean_file,results:comparison.results.map(({selected,...r})=>r)},null,2),'application/json');
   $('download-decisions').onclick=()=>download('scenario_decisions.csv',csv(['elapsed_seconds','amount','true_label','fraud_risk','expected_review_benefit','review_risk','review_expected_value'],data.predictions.map((r,i)=>[...r,comparison.ev[i],comparison.results[0].selected[i],comparison.results[1].selected[i]])),'text/csv');

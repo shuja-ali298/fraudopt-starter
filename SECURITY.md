@@ -29,3 +29,19 @@ in public issues. The maintainer is `@shuja-ali298`.
 CodeQL results and GitHub-side protections require the workflows/settings to be
 active on GitHub. Local tests and a passing dependency audit are useful checks,
 not a guarantee that all vulnerabilities are absent.
+
+## Automatic Pages refresh
+
+The `workflow_run` path accepts only successful scheduled/manual upstream runs
+on `main` in this repository. Build code is checked out from the trusted Pages
+workflow revision; it never checks out or executes downloaded artifact code.
+Only dashboard JSON/CSV prediction files are staged, with archive path, duplicate,
+symlink and size checks. The GitHub token is passed only to the download step
+and is not forwarded to the signed artifact-storage URL. Staging provenance
+records source IDs, times and hashes, not credentials or signed download URLs.
+
+The build job has Contents/Actions read access; the separate deployment job
+has Pages/OIDC write access and publishes only after the build passes. Preserve
+these boundaries when changing artifact selection, workflow triggers or source
+validation. A successful workflow run does not mean transaction labels are live
+or complaint categories establish confirmed fraud.

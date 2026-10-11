@@ -6,6 +6,7 @@ on:
       - 'web/**'
       - 'scripts/build_pages.py'
       - 'scripts/test_pages.js'
+      - 'scripts/fetch_dashboard_artifacts.py'
       - 'dashboard_data/**'
       - 'fraudopt/dashboard.py'
       - 'fraudopt/diagnostics.py'
@@ -13,6 +14,10 @@ on:
       - 'requirements-pipeline.txt'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
+  workflow_run:
+    workflows: ['Daily complaint refresh', 'Weekly reproducible model build']
+    types: [completed]
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -20,8 +25,18 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'schedule' ||
+        github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -32,7 +47,11 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-pipeline.txt
       - run: python -m pip install -r requirements-pipeline.txt
-      - run: python scripts/build_pages.py
+      - name: Fetch trusted dashboard sources
+        run: python scripts/fetch_dashboard_artifacts.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: python scripts/build_pages.py --source _dashboard_inputs
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
