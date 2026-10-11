@@ -1,6 +1,7 @@
 """Run locally with: python -m streamlit run app.py."""
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -9,9 +10,13 @@ import streamlit as st
 from matplotlib.figure import Figure
 from sklearn.metrics import precision_recall_curve, average_precision_score, roc_auc_score, brier_score_loss
 
-from fraudopt.dashboard import validate_predictions, validate_trends, compare_policies
+from fraudopt.dashboard import validate_predictions, validate_trends, compare_policies, report_path
 
 ROOT = Path(__file__).resolve().parent
+OUTPUT_LOCATIONS = {'Pipeline outputs': ROOT/'outputs', 'Demonstration snapshot': ROOT/'dashboard_data'}
+if os.environ.get('FRAUDOPT_OUTPUT_DIR'):
+    OUTPUT_LOCATIONS['Configured outputs'] = Path(os.environ['FRAUDOPT_OUTPUT_DIR']).expanduser().resolve()
+ALLOWED_DIRECTORIES = [*OUTPUT_LOCATIONS.values(), ROOT/'data']
 st.set_page_config(page_title='FraudOpt | Decision analytics', page_icon='📊', layout='wide')
 st.markdown('''<style>
 .block-container {padding-top: 2rem; max-width: 1400px;}
@@ -30,7 +35,12 @@ def read_json(path, modified_ns, size):
 
 
 def load_file(directory, name, kind='csv', required=True):
-    path = directory / name
+    try:
+        path = report_path(directory, name, ALLOWED_DIRECTORIES)
+    except ValueError:
+        if required:
+            st.error('Report access was blocked. Choose an approved data source.')
+        return None
     if not path.exists():
         if required:
             st.info(f'{name} is unavailable. Generate it with the pipeline or copy it from a workflow artifact into this output folder.')
@@ -39,13 +49,16 @@ def load_file(directory, name, kind='csv', required=True):
         stat = path.stat()
         reader = read_json if kind == 'json' else read_csv
         return reader(str(path), stat.st_mtime_ns, stat.st_size)
-    except (OSError, ValueError, pd.errors.ParserError) as exc:
-        st.error(f'Could not read {name}: {exc}')
+    except (OSError, ValueError, pd.errors.ParserError):
+        st.error(f'Could not read {name}. Check its format and access permissions.')
         return None
 
 
 def freshness(directory, filename):
-    path = directory / filename
+    try:
+        path = report_path(directory, filename, ALLOWED_DIRECTORIES)
+    except ValueError:
+        return
     if path.exists():
         modified = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
         st.caption(f'Local file modified: {modified:%d %b %Y, %H:%M UTC}. This is a file timestamp, not proof of a successful scheduled run.')
@@ -214,14 +227,14 @@ st.sidebar.title('FraudOpt')
 st.sidebar.caption('Research → decisions → evidence')
 page = st.sidebar.radio('Explore', ['Model performance','Review strategy','Complaint trends'])
 with st.sidebar.expander('Local data'):
-    default_outputs = ROOT/'outputs' if (ROOT/'outputs'/'test_predictions.csv.gz').exists() else ROOT/'dashboard_data'
-    output_path = st.text_input('Output folder',value=str(default_outputs))
+    default_location = ('Configured outputs' if 'Configured outputs' in OUTPUT_LOCATIONS else
+                        'Pipeline outputs' if (ROOT/'outputs'/'test_predictions.csv.gz').exists() else
+                        'Demonstration snapshot')
+    location = st.selectbox('Data source', list(OUTPUT_LOCATIONS), index=list(OUTPUT_LOCATIONS).index(default_location))
     if st.button('Reload outputs'):
         st.cache_data.clear()
 st.sidebar.caption('Portfolio research · historical card model · independent public complaint feed')
-directory = Path(output_path).expanduser()
-if not directory.is_absolute():
-    directory = ROOT/directory
+directory = OUTPUT_LOCATIONS[location]
 if directory.resolve() == (ROOT/'dashboard_data').resolve():
     st.info('Demonstration snapshot. These results do not refresh automatically from scheduled workflows.')
 st.title('FraudOpt')

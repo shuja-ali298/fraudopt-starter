@@ -6,6 +6,13 @@ __pycache__/
 venv/
 /_site/
 .env
+.env.*
+!.env.example
+/.streamlit/secrets.toml
+*.pem
+*.key
+*.p12
+*.pfx
 *.egg-info/
 .DS_Store
 # No real/large dataset, model or private credentials in Git

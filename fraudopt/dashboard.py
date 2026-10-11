@@ -1,9 +1,21 @@
 """Validated data and policy comparisons for the stakeholder dashboard."""
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from fraudopt.policy import select_reviews, evaluate_policy
 
 PREDICTION_COLUMNS = ['elapsed_seconds', 'amount', 'true_label', 'fraud_risk']
+
+
+def report_path(directory, name, allowed_directories):
+    """Reject directories and symlink targets outside trusted report locations."""
+    directory = Path(directory).resolve()
+    if directory not in {Path(path).resolve() for path in allowed_directories}:
+        raise ValueError('Choose an approved report location')
+    path = (directory / name).resolve()
+    if path.parent != directory:
+        raise ValueError('Report file must stay inside its approved location')
+    return path
 
 
 def validate_predictions(frame):

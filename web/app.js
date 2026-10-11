@@ -19,7 +19,7 @@ function chart(target,series,xLabel,yLabel){
   for(let i=0;i<5;i++){const v=ymin+(ymax-ymin)*i/4;svg+='<line x1="70" x2="780" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#e9eef2"/><text x="60" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11" fill="#526575">'+number(v)+'</text>';}
   series.forEach(s=>{let path='',last=null;s.values.forEach(([x,y])=>{if(y===null){last=null;return;}path+=(last===null?'M':'L')+X(x)+','+Y(y);last=x;});svg+='<path d="'+path+'" fill="none" stroke="'+s.color+'" stroke-width="2.5"/>';});
   const isDate=xLabel==='Received date',formatX=x=>isDate?new Date(x).toISOString().slice(0,10):number(x);
-  svg+='<text x="70" y="322" font-size="11">'+formatX(xmin)+'</text><text x="780" y="322" text-anchor="end" font-size="11">'+formatX(xmax)+'</text><text x="425" y="347" text-anchor="middle" font-size="12">'+escapeText(xLabel)+'</text><text x="70" y="24" font-size="12">'+escapeText(yLabel)+'</text></svg><div class="legend">'+series.map(s=>'<span style="color:'+s.color+'">● '+escapeText(s.name)+'</span>').join('')+'</div>';
+  svg+='<text x="70" y="322" font-size="11">'+formatX(xmin)+'</text><text x="780" y="322" text-anchor="end" font-size="11">'+formatX(xmax)+'</text><text x="425" y="347" text-anchor="middle" font-size="12">'+escapeText(xLabel)+'</text><text x="70" y="24" font-size="12">'+escapeText(yLabel)+'</text></svg><div class="legend">'+series.map((s,i)=>'<span class="series-'+i+'">● '+escapeText(s.name)+'</span>').join('')+'</div>';
   $(target).innerHTML=svg;
 }
 function model(){const r=data.report,m=r.untouched_test_metrics;

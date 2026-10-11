@@ -29,8 +29,9 @@ def test_invalid_output_rejected():
 
 
 @pytest.fixture
-def app_outputs(tmp_path):
+def app_outputs(tmp_path, monkeypatch):
     output = tmp_path/'outputs'; output.mkdir()
+    monkeypatch.setenv('FRAUDOPT_OUTPUT_DIR', str(output))
     pd.DataFrame({'elapsed_seconds':[0,1,86400,86401], 'amount':[100,200,50,100],
                   'true_label':[1,0,1,0],'fraud_risk':[.9,.8,.01,.02]}).to_csv(output/'test_predictions.csv.gz',index=False,compression='gzip')
     (output/'model_report.json').write_text(json.dumps({'chosen_model':'gradient_boosting'}))
@@ -42,7 +43,6 @@ def get_app(output):
     pytest.importorskip('streamlit')
     from streamlit.testing.v1 import AppTest
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=30).run()
-    app.text_input[0].set_value(str(output)).run()
     return app
 
 
@@ -70,3 +70,29 @@ def test_malformed_data_shows_error(app_outputs):
     pd.DataFrame({'amount':[1]}).to_csv(app_outputs/'test_predictions.csv.gz',index=False,compression='gzip')
     app=get_app(app_outputs)
     assert not app.exception and app.error
+
+
+def test_report_paths_reject_other_directories_and_symlinks(tmp_path):
+    from fraudopt.dashboard import report_path
+    allowed = tmp_path/'reports'; allowed.mkdir()
+    outside = tmp_path/'private'; outside.mkdir()
+    secret = outside/'model_report.json'; secret.write_text('{"private":true}')
+    assert report_path(allowed,'model_report.json',[allowed]) == allowed/'model_report.json'
+    with pytest.raises(ValueError,match='approved'):
+        report_path(outside,'model_report.json',[allowed])
+    with pytest.raises(ValueError,match='inside'):
+        report_path(allowed,'../private/model_report.json',[allowed])
+    (allowed/'model_report.json').symlink_to(secret)
+    with pytest.raises(ValueError,match='inside'):
+        report_path(allowed,'model_report.json',[allowed])
+
+
+def test_streamlit_blocks_symlinked_report_without_disclosing_path(app_outputs, tmp_path):
+    (app_outputs/'model_report.json').unlink()
+    private=tmp_path/'private-report.json'; private.write_text('{"secret":"not for display"}')
+    (app_outputs/'model_report.json').symlink_to(private)
+    app=get_app(app_outputs)
+    assert not app.exception
+    # Optional report is denied; valid prediction and complaint views still work.
+    assert 'not for display' not in str(app)
+    assert app.metric[0].label=='Average precision'

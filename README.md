@@ -150,7 +150,7 @@ python -m streamlit run app.py
 - **Review strategy:** configurable daily capacity, review/friction costs and effectiveness; comparison of risk-only and positive expected-value reviews; capacity utilisation, capacity frontier and downloadable decisions/scenario reports. All benefit values are simulated in dataset amount units. Exploring test outcomes must not be used to claim a newly tuned strategy has untouched evaluation.
 - **Complaint trends:** independent received-date counts, fraud/scam issue-category matches, date filtering and CSV export. Publication lag and reporting bias limit interpretation; missing dates remain gaps rather than assumed zeros.
 
-The **Local data** control accepts another output folder, including extracted GitHub workflow artifacts. Cache keys include file size and modification time; **Reload outputs** clears cached data. File timestamps indicate local modification only, not a verified successful ingestion. Missing model outputs do not prevent reading complaint trends.
+The **Local data** selector is restricted to pipeline outputs, the demonstration snapshot, and an optional administrator-configured folder. Set `FRAUDOPT_OUTPUT_DIR` before launching Streamlit to use another trusted output folder, including extracted GitHub workflow artifacts. Visitors cannot enter arbitrary server paths, and report symlinks cannot escape their approved folder. Cache keys include file size and modification time; **Reload outputs** clears cached data. File timestamps indicate local modification only, not a verified successful ingestion. Missing model outputs do not prevent reading complaint trends.
 
 Dashboard dependencies have their own Python 3.11 lock, constrained by the pipeline lock. Update it deliberately with:
 
@@ -218,3 +218,38 @@ not support the JSON fetch. Generated `_site/` files are ignored; the Actions
 workflow rebuilds them. Interactive exports include scenario assumptions and
 selected review flags. No joblib models, complaint databases or credentials
 are included in the Pages artifact.
+
+## Security controls
+
+Actions are pinned to verified full commit SHAs; checkout does not retain Git
+credentials. Pages builds with read-only repository permissions and deploys in a
+separate job with Pages/OIDC permissions, restricted to `main`. Optional Azure
+credentials are available only to the cloud pull/push steps; Azure authentication
+remains optional.
+
+The Security checks workflow audits both dependency locks and runs CodeQL for
+Python and JavaScript on pushes, pull requests and a weekly schedule. Dependabot
+checks Python dependencies and Action pins weekly. Review its PRs and regenerate
+related locks together when needed; do not automatically merge security updates
+without tests. Credential files are ignored, including `.env.*`, Streamlit secrets
+and common private-key formats. The Pages dashboard uses a same-origin Content
+Security Policy and avoids inline scripts/styles.
+
+These repository settings still require an owner to configure on GitHub:
+
+- Protect `main` using a ruleset: require the Tests check, block force pushes and
+  branch deletion. Require CodeQL and dependency-audit checks after their first
+  successful runs. For a solo maintainer, do not require another person's approval
+  unless a reviewer is available. CODEOWNERS identifies the maintainer for
+  workflow, dependency and build-script changes; it only enforces review when
+  matching repository settings are enabled.
+- Restrict the `github-pages` environment's deployment branches to `main`.
+- Enable secret scanning, push protection and Dependabot alerts/security updates
+  in the repository's Security settings where available.
+- Use advanced CodeQL setup for the committed workflow. If GitHub default CodeQL
+  setup is already enabled, disable it before using this workflow to avoid
+  competing configurations.
+
+A vulnerability audit is time-sensitive and cannot guarantee the absence of
+unknown vulnerabilities. Ignoring a secret does not remove it from existing Git
+history; rotate any exposed credential before cleaning history.
