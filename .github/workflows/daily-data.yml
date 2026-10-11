@@ -1,0 +1,35 @@
+name: Daily complaint refresh
+on:
+  schedule:
+    - cron: '17 5 * * *' # UTC, may run late; hosted Actions scheduling is not exact
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fraudopt-complaint-store
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      AZURE_STORAGE_CONTAINER: fraudopt-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.lock
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip install --no-deps -e .
+      - run: fraudopt cloud pull
+      - run: fraudopt ingest-complaints --lookback-days 90
+      - run: fraudopt cloud push
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complaint-trends-${{ github.run_id }}
+          path: |
+            outputs/complaint_daily_trends.csv
+          retention-days: 30

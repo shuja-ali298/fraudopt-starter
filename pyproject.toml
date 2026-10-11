@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraudopt-starter"
+version = "0.1.0"
+description = "Automated fraud classification, capacity-aware decisions and complaint-trend ingestion"
+requires-python = ">=3.10"
+dependencies = [
+ "numpy>=1.24,<3", "pandas>=2.0,<3", "scikit-learn>=1.3,<2",
+ "requests>=2.31,<3", "joblib>=1.3,<2", "pyarrow>=14,<24",
+ "matplotlib>=3.7,<4",
+]
+[project.optional-dependencies]
+test = ["pytest>=7.4,<10"]
+cloud = ["azure-storage-blob>=12.19,<13"]
+
+[project.scripts]
+fraudopt = "fraudopt.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fraudopt*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

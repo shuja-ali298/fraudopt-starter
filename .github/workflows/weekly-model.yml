@@ -1,0 +1,37 @@
+name: Weekly reproducible model build
+on:
+  schedule:
+    - cron: '43 6 * * 0' # UTC Sundays; historical data remains unchanged
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.lock
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip install --no-deps -e .
+      - run: python -m pytest -q
+      - run: fraudopt ingest-model
+      - run: fraudopt profile
+      - run: fraudopt train --capacity-per-day 50
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fraudopt-model-${{ github.run_id }}
+          path: |
+            outputs/model.joblib
+            outputs/model_report.json
+            outputs/source_profile.json
+            outputs/model_diagnostics.svg
+            outputs/calibration_bins.csv
+            outputs/precision_recall.csv
+            outputs/test_predictions.csv.gz
+            data/creditcard_manifest.json
+          retention-days: 60

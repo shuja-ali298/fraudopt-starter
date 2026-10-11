@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+.venv311/
+.env
+*.egg-info/
+.DS_Store
+# No real/large dataset, model or private credentials in Git
+/data/*
+!/data/.gitkeep
+/outputs/*
+!/outputs/.gitkeep
