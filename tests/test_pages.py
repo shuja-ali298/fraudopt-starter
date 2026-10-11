@@ -18,4 +18,5 @@ def test_pages_build_uses_only_dashboard_fields(tmp_path):
     assert len(payload['predictions'])==4
     assert payload['complaints']==[{'date':'2026-10-01','count':5,'matches':2}]
     assert (destination/'index.html').exists() and (destination/'model_diagnostics.svg').exists()
+    assert all((destination/name).exists() for name in ['precision_recall.svg', 'calibration.svg', 'icon.svg'])
     assert not list(destination.glob('*.joblib')) and not list(destination.glob('*.sqlite'))

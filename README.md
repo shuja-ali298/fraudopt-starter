@@ -290,3 +290,28 @@ These repository settings still require an owner to configure on GitHub:
 A vulnerability audit is time-sensitive and cannot guarantee the absence of
 unknown vulnerabilities. Ignoring a secret does not remove it from existing Git
 history; rotate any exposed credential before cleaning history.
+
+The Pages interface uses compact page titles and keeps technical source details
+collapsed. Review controls show effectiveness as a percentage; editing assumptions
+marks results as pending and disables scenario exports until the update is applied.
+Reset restores the saved model assumptions. Complaint filters include 7-day and
+30-day presets anchored to the latest received date, plus date-range validation.
+Model charts are separate SVGs with a zoomed calibration scale. Navigation supports
+deep links, browser back/forward and keyboard focus; charts resize to the available
+width on mobile.
+
+## Executive audience
+
+The opening page leads with the business trade-off between fraud coverage,
+investigation effort, genuine payments flagged and illustrative financial value.
+Review approaches are labelled **Prioritise fraud risk** and **Prioritise financial
+impact**. The share of known fraud amount included in selected reviews is shown
+separately from the share of fraud cases found; neither is a measured loss-saving
+figure. The overview follows the last applied assumptions, and its plain-text
+summary can be downloaded for discussion. Technical metrics and model charts
+remain in a collapsed specialist-review section. The primary capacity chart
+shows fraud cases identified rather than an unexplained monetary score.
+
+Consumer complaints have their own business interpretation and are explicitly
+separate from card-payment results. Their category counts are external reporting
+signals, not confirmed fraud or the organisation's measured loss rate.
