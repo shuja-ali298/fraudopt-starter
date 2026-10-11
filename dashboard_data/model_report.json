@@ -1,0 +1,214 @@
+{
+  "dataset": "ULB 2013/OpenML #43627 historical snapshot",
+  "reproducibility": {
+    "python": "3.11.6",
+    "dependencies": {
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.17.1",
+      "requests": "2.34.2",
+      "joblib": "1.6.0",
+      "pyarrow": "23.0.1",
+      "matplotlib": "3.11.2"
+    },
+    "sha256_clean_file": "7c670c25d0c5dc5198c53730ee9f8741a87a16c7c88aa4a1dbd455cdee0f50d2"
+  },
+  "selection_metric": "average_precision",
+  "candidate_validation_policies": {
+    "logistic_regression": {
+      "reviews": 31,
+      "fraud_found": 18,
+      "false_reviews": 13,
+      "fraud_recall": 0.32142857142857145,
+      "precision": 0.5806451612903226,
+      "simulated_net_benefit_amount_units": 5018.13
+    },
+    "gradient_boosting": {
+      "reviews": 23,
+      "fraud_found": 19,
+      "false_reviews": 4,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.8260869565217391,
+      "simulated_net_benefit_amount_units": 5268.13
+    }
+  },
+  "validation_cost_sensitivity": [
+    {
+      "review_cost": 5.0,
+      "effectiveness": 0.35,
+      "reviews": 21,
+      "fraud_found": 19,
+      "false_reviews": 2,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.9047619047619048,
+      "simulated_net_benefit_amount_units": 2644.07
+    },
+    {
+      "review_cost": 5.0,
+      "effectiveness": 0.7,
+      "reviews": 26,
+      "fraud_found": 21,
+      "false_reviews": 5,
+      "fraud_recall": 0.375,
+      "precision": 0.8076923076923077,
+      "simulated_net_benefit_amount_units": 5366.85
+    },
+    {
+      "review_cost": 5.0,
+      "effectiveness": 1.0,
+      "reviews": 29,
+      "fraud_found": 21,
+      "false_reviews": 8,
+      "fraud_recall": 0.375,
+      "precision": 0.7241379310344828,
+      "simulated_net_benefit_amount_units": 7694.79
+    },
+    {
+      "review_cost": 10.0,
+      "effectiveness": 0.35,
+      "reviews": 20,
+      "fraud_found": 19,
+      "false_reviews": 1,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.95,
+      "simulated_net_benefit_amount_units": 2564.07
+    },
+    {
+      "review_cost": 10.0,
+      "effectiveness": 0.7,
+      "reviews": 23,
+      "fraud_found": 19,
+      "false_reviews": 4,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.8260869565217391,
+      "simulated_net_benefit_amount_units": 5268.13
+    },
+    {
+      "review_cost": 10.0,
+      "effectiveness": 1.0,
+      "reviews": 24,
+      "fraud_found": 19,
+      "false_reviews": 5,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.7916666666666666,
+      "simulated_net_benefit_amount_units": 7625.19
+    },
+    {
+      "review_cost": 20.0,
+      "effectiveness": 0.35,
+      "reviews": 18,
+      "fraud_found": 17,
+      "false_reviews": 1,
+      "fraud_recall": 0.30357142857142855,
+      "precision": 0.9444444444444444,
+      "simulated_net_benefit_amount_units": 2372.76
+    },
+    {
+      "review_cost": 20.0,
+      "effectiveness": 0.7,
+      "reviews": 22,
+      "fraud_found": 19,
+      "false_reviews": 3,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.8636363636363636,
+      "simulated_net_benefit_amount_units": 5073.13
+    },
+    {
+      "review_cost": 20.0,
+      "effectiveness": 1.0,
+      "reviews": 23,
+      "fraud_found": 19,
+      "false_reviews": 4,
+      "fraud_recall": 0.3392857142857143,
+      "precision": 0.8260869565217391,
+      "simulated_net_benefit_amount_units": 7420.19
+    }
+  ],
+  "period_time_ranges": {
+    "train": {
+      "start_seconds": 0.0,
+      "end_seconds": 108574.0,
+      "observed_span_seconds": 108574.0
+    },
+    "calibration": {
+      "start_seconds": 108575.0,
+      "end_seconds": 132928.0,
+      "observed_span_seconds": 24353.0
+    },
+    "selection": {
+      "start_seconds": 132929.0,
+      "end_seconds": 151328.0,
+      "observed_span_seconds": 18399.0
+    },
+    "test": {
+      "start_seconds": 151329.0,
+      "end_seconds": 172792.0,
+      "observed_span_seconds": 21463.0
+    }
+  },
+  "period_rows": {
+    "train": 156644,
+    "calibration": 42720,
+    "selection": 42722,
+    "test": 42721
+  },
+  "period_fraud": {
+    "train": 350,
+    "calibration": 34,
+    "selection": 56,
+    "test": 52
+  },
+  "candidates_selection_only": {
+    "logistic_regression": {
+      "average_precision": 0.833476,
+      "roc_auc": 0.979649,
+      "brier_score": 0.00043198,
+      "fraud_prevalence": 0.001311
+    },
+    "gradient_boosting": {
+      "average_precision": 0.845952,
+      "roc_auc": 0.986368,
+      "brier_score": 0.00033283,
+      "fraud_prevalence": 0.001311
+    }
+  },
+  "chosen_model": "gradient_boosting",
+  "untouched_test_metrics": {
+    "average_precision": 0.739762,
+    "roc_auc": 0.98257,
+    "brier_score": 0.00043822,
+    "fraud_prevalence": 0.001217
+  },
+  "simulated_policy_assumptions": {
+    "review_cost_amount_units": 10.0,
+    "false_review_friction_amount_units": 15.0,
+    "intervention_effectiveness": 0.7,
+    "capacity_per_simulated_day": 50,
+    "capacity_semantics": "Offline whole-day ranking; full capacity for each touched elapsed-day bucket, including partial days"
+  },
+  "policy_test_comparison": {
+    "risk_only_top_k": {
+      "reviews": 50,
+      "fraud_found": 39,
+      "false_reviews": 11,
+      "fraud_recall": 0.75,
+      "precision": 0.78,
+      "simulated_net_benefit_amount_units": 1992.54
+    },
+    "expected_value_top_k": {
+      "reviews": 23,
+      "fraud_found": 16,
+      "false_reviews": 7,
+      "fraud_recall": 0.3076923076923077,
+      "precision": 0.6956521739130435,
+      "simulated_net_benefit_amount_units": 2295.75
+    }
+  },
+  "caveats": [
+    "Dataset is historical and static, not live fraud.",
+    "Currency and intervention effectiveness are not verified; results are illustrative.",
+    "Only anonymous PCA columns and amount are available, not account history.",
+    "Only one untouched chronological test evaluation is produced per run."
+  ]
+}

@@ -214,13 +214,16 @@ st.sidebar.title('FraudOpt')
 st.sidebar.caption('Research → decisions → evidence')
 page = st.sidebar.radio('Explore', ['Model performance','Review strategy','Complaint trends'])
 with st.sidebar.expander('Local data'):
-    output_path = st.text_input('Output folder',value=str(ROOT/'outputs'))
+    default_outputs = ROOT/'outputs' if (ROOT/'outputs'/'test_predictions.csv.gz').exists() else ROOT/'dashboard_data'
+    output_path = st.text_input('Output folder',value=str(default_outputs))
     if st.button('Reload outputs'):
         st.cache_data.clear()
 st.sidebar.caption('Portfolio research · historical card model · independent public complaint feed')
 directory = Path(output_path).expanduser()
 if not directory.is_absolute():
     directory = ROOT/directory
+if directory.resolve() == (ROOT/'dashboard_data').resolve():
+    st.info('Demonstration snapshot. These results do not refresh automatically from scheduled workflows.')
 st.title('FraudOpt')
 st.caption('Transparent fraud modelling and review allocation under explicit assumptions.')
 {'Model performance':model_page,'Review strategy':strategy_page,'Complaint trends':complaint_page}[page](directory)

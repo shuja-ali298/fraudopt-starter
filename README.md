@@ -157,3 +157,27 @@ Dashboard dependencies have their own Python 3.11 lock, constrained by the pipel
 ```bash
 pip-compile --extra dashboard --extra test --extra cloud --constraint requirements.lock --strip-extras --no-emit-index-url --output-file requirements-dashboard.lock pyproject.toml
 ```
+
+## First hosted demonstration
+
+The tracked `dashboard_data/` folder contains a fixed demonstration snapshot of
+`model_report.json`, `test_predictions.csv.gz`, and `complaint_daily_trends.csv`.
+The app uses local `outputs/` when predictions are available; otherwise it uses
+this snapshot and displays a snapshot notice. `requirements.txt` points hosting
+to the tested dashboard dependency lock.
+
+Deploy on Streamlit Community Cloud with this GitHub repository, branch `main`,
+entrypoint `app.py`, and Python **3.11** in Advanced settings. The snapshot is
+not automatically refreshed by scheduled workflows. To refresh it deliberately:
+
+```bash
+cp outputs/model_report.json outputs/test_predictions.csv.gz outputs/complaint_daily_trends.csv dashboard_data/
+git add dashboard_data
+git commit -m "Refresh dashboard demonstration snapshot"
+git push
+```
+
+Local pipeline outputs and remote GitHub Actions artifacts are separate: download
+remote artifacts before copying them if the hosted snapshot should use those runs.
+An automatically refreshed deployment requires a connection to artifact or object
+storage; that integration is not part of this first demonstration deployment.
