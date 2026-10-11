@@ -181,3 +181,40 @@ Local pipeline outputs and remote GitHub Actions artifacts are separate: downloa
 remote artifacts before copying them if the hosted snapshot should use those runs.
 An automatically refreshed deployment requires a connection to artifact or object
 storage; that integration is not part of this first demonstration deployment.
+
+## GitHub Pages dashboard
+
+A static HTML/CSS/JavaScript version is in `web/`. The browser recalculates review
+policies from saved probabilities; Python is only used during the build to
+validate the snapshot and create chart/data assets. Streamlit remains available
+locally and on its existing host.
+
+To publish:
+
+1. In GitHub **Settings → Pages → Build and deployment**, set **Source** to
+   **GitHub Actions**.
+2. Commit and push `web/`, `scripts/build_pages.py`, `tests/test_pages.py`,
+   `.github/workflows/pages.yml`, `.gitignore`, and this README.
+3. Open **Actions → Deploy dashboard to GitHub Pages** and run it on `main`,
+   or let the matching push start it. The workflow builds `_site/` and publishes
+   only that static directory. The deployment reports the actual Pages URL.
+
+For this repository the expected project URL is
+`https://shuja-ali298.github.io/fraudopt-starter/`.
+The Pages site uses the committed `dashboard_data/` snapshot, not live workflow
+artifacts. Refresh the three snapshot files and commit them to publish new data.
+All assets use relative URLs, so repository-subdirectory hosting works.
+
+Local build and preview:
+
+```bash
+source .venv311/bin/activate
+python scripts/build_pages.py
+python -m http.server 8000 --directory _site
+```
+
+Open `http://localhost:8000`. Opening the HTML directly as a `file://` URL does
+not support the JSON fetch. Generated `_site/` files are ignored; the Actions
+workflow rebuilds them. Interactive exports include scenario assumptions and
+selected review flags. No joblib models, complaint databases or credentials
+are included in the Pages artifact.
