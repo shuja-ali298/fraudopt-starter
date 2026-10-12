@@ -44,6 +44,15 @@ def build(source, destination):
                'provenance': provenance}
     (destination / 'data.json').write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False))
     write_diagnostics(predictions.true_label, predictions.fraud_risk, destination)
+    # Keep the HTML and its assets in sync across browser/CDN caches.
+    html = (destination / 'index.html').read_text()
+    for name in ('style.css', 'app.js', 'policy.js', 'icon.svg', 'precision_recall.svg', 'calibration.svg'):
+        path = destination / name
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+        versioned = f'{path.stem}.{digest}{path.suffix}'
+        shutil.copyfile(path, destination / versioned)
+        html = html.replace(f'./{name}', f'./{versioned}')
+    (destination / 'index.html').write_text(html)
     (destination / '.nojekyll').touch()
     print(f'Built {destination}: {len(predictions):,} held-out predictions, {len(complaints)} complaint dates')
 
