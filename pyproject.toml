@@ -9,7 +9,7 @@ description = "Automated fraud classification, capacity-aware decisions and comp
 requires-python = ">=3.11"
 dependencies = [
  "numpy>=1.24,<3", "pandas>=2.0,<3", "scikit-learn>=1.3,<2",
- "requests>=2.31,<3", "joblib>=1.3,<2", "pyarrow>=14,<24",
+ "requests>=2.31,<3", "joblib>=1.3,<2", "pyarrow>=14,<27",
  "matplotlib>=3.7,<4",
 ]
 [project.optional-dependencies]
