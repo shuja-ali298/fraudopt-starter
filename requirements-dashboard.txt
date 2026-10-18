@@ -201,7 +201,7 @@ six==1.17.0
     #   python-dateutil
 starlette==1.7.0
     # via streamlit
-streamlit==1.65.0
+streamlit==1.66.0
     # via fraudopt-starter (pyproject.toml)
 threadpoolctl==3.7.0
     # via
