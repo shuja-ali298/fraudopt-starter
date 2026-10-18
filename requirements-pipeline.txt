@@ -52,7 +52,7 @@ packaging==26.3
     # via
     #   matplotlib
     #   pytest
-pandas==2.3.3
+pandas==3.0.6
     # via fraudopt-starter (pyproject.toml)
 pillow==12.3.0
     # via matplotlib
