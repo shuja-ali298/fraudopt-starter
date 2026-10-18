@@ -139,7 +139,7 @@ pluggy==1.6.0
     #   pytest
 protobuf==7.36.2
     # via streamlit
-pyarrow==23.0.1
+pyarrow==26.0.0
     # via
     #   -c requirements-pipeline.txt
     #   fraudopt-starter (pyproject.toml)

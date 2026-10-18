@@ -58,7 +58,7 @@ pillow==12.3.0
     # via matplotlib
 pluggy==1.6.0
     # via pytest
-pyarrow==23.0.1
+pyarrow==26.0.0
     # via fraudopt-starter (pyproject.toml)
 pycparser==3.11
     # via cffi
