@@ -22,7 +22,7 @@ cryptography==50.0.2
     # via azure-storage-blob
 cycler==0.12.1
     # via matplotlib
-fonttools==4.66.1
+fonttools==4.67.0
     # via matplotlib
 idna==3.20
     # via requests

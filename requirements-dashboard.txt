@@ -54,7 +54,7 @@ cycler==0.12.1
     # via
     #   -c requirements-pipeline.txt
     #   matplotlib
-fonttools==4.66.1
+fonttools==4.67.0
     # via
     #   -c requirements-pipeline.txt
     #   matplotlib
