@@ -123,7 +123,7 @@ packaging==26.3
     #   matplotlib
     #   pytest
     #   streamlit
-pandas==2.3.3
+pandas==3.0.6
     # via
     #   -c requirements-pipeline.txt
     #   fraudopt-starter (pyproject.toml)
