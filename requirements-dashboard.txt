@@ -22,7 +22,7 @@ azure-storage-blob==12.31.0
     # via
     #   -c requirements-pipeline.txt
     #   fraudopt-starter (pyproject.toml)
-certifi==2026.7.22
+certifi==2026.10.18
     # via
     #   -c requirements-pipeline.txt
     #   requests
